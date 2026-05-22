@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Product Viewer</title>
+<style>
+  /* ---------- Reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+
+  :root {
+    --bg: #000;
+    --surface: rgba(255, 255, 255, 0.07);
+    --surface-hover: rgba(255, 255, 255, 0.12);
+    --surface-active: rgba(255, 255, 255, 0.18);
+    --border: rgba(255, 255, 255, 0.14);
+    --text: #f5f5f7;
+    --text-dim: rgba(245, 245, 247, 0.68);
+    --accent: #ff7a3d;
+    --ease: cubic-bezier(0.42, 0, 0.58, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --pill-radius: 999px;
+    --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
+    --font-text: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-text);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+
+  /* ---------- Layout ---------- */
+  .viewer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) 1fr;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 50%, #0d0d0f 0%, #000 70%);
+  }
+
+  /* ---------- Close button ---------- */
+  .close-btn {
+    position: absolute;
+    top: 28px;
+    right: 32px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 200ms var(--ease), transform 300ms var(--ease-out);
+    backdrop-filter: blur(12px);
+    z-index: 20;
+  }
+  .close-btn:hover { background: rgba(255,255,255,0.14); transform: rotate(90deg); }
+  .close-btn svg { width: 14px; height: 14px; }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: relative;
+    padding: 60px 24px 60px 56px;
+    display: flex;
+    align-items: center;
+    z-index: 10;
+  }
+  .sidebar-inner {
+    width: 100%;
+    max-width: 280px;
+    position: relative;
+  }
+
+  /* Nav arrows */
+  .nav {
+    position: absolute;
+    left: -44px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 5;
+  }
+  .nav button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition: background 200ms var(--ease), transform 200ms var(--ease);
+  }
+  .nav button:hover:not(:disabled) {
+    background: rgba(255,255,255,0.16);
+    transform: scale(1.06);
+  }
+  .nav button:disabled { opacity: 0.3; cursor: default; }
+  .nav svg { width: 12px; height: 12px; }
+
+  /* Feature list */
+  .features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .feature { position: relative; }
+
+  .pill {
+    width: 100%;
+    text-align: left;
+    background: var(--surface);
+    border: none;
+    color: var(--text);
+    padding: 13px 18px;
+    border-radius: var(--pill-radius);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-family: var(--font-text);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    backdrop-filter: blur(20px);
+    transition:
+      background 280ms var(--ease),
+      transform 280ms var(--ease-out);
+  }
+  .pill:hover { background: var(--surface-hover); }
+
+  .feature.active .pill {
+    background: var(--surface-active);
+  }
+
+  /* Marker — the small circle with + or filled dot */
+  .marker {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.25px solid rgba(255,255,255,0.45);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    transition: all 320ms var(--ease);
+    position: relative;
+    overflow: hidden;
+  }
+  .marker::before, .marker::after {
+    content: "";
+    position: absolute;
+    background: var(--text);
+    transition: opacity 220ms var(--ease);
+  }
+  .marker::before { width: 9px; height: 1.25px; }
+  .marker::after  { width: 1.25px; height: 9px; }
+
+  .feature.active .marker {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .feature.active .marker::before,
+  .feature.active .marker::after {
+    opacity: 0;
+  }
+
+  /* Inline description card */
+  .description {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    padding: 0 22px;
+    background: var(--surface);
+    border-radius: 22px;
+    backdrop-filter: blur(20px);
+    transition:
+      max-height 480ms var(--ease),
+      opacity 280ms var(--ease),
+      margin-top 320ms var(--ease),
+      padding 320ms var(--ease);
+  }
+  .feature.active .description {
+    max-height: 240px;
+    opacity: 1;
+    margin-top: 10px;
+    padding: 18px 22px 20px;
+  }
+  .description p {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--text-dim);
+    letter-spacing: -0.005em;
+  }
+  .description strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .description sup {
+    font-size: 9px;
+    margin-left: 1px;
+    opacity: 0.7;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  /* ---------- Stage / phones ---------- */
+  .stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 42px;
+    padding: 60px;
+    opacity: 0;
+    transform: scale(0.985);
+    transition: opacity 520ms var(--ease), transform 700ms var(--ease-out);
+    pointer-events: none;
+  }
+  .scene.active { opacity: 1; transform: scale(1); pointer-events: auto; }
+
+  .hand-phone {
+    position: relative;
+    width: 280px;
+    aspect-ratio: 9 / 19;
+    perspective: 1200px;
+  }
+  .phone {
+    width: 100%;
+    height: 100%;
+    border-radius: 38px;
+    background: linear-gradient(160deg, #1a1a1c, #2a2a2e 60%, #131314);
+    box-shadow:
+      0 0 0 2px rgba(255,255,255,0.04) inset,
+      0 0 0 8px var(--frame, #d8612d),
+      0 30px 60px -10px rgba(0,0,0,0.7),
+      0 0 80px -20px var(--frame-glow, rgba(216, 97, 45, 0.4));
+    overflow: hidden;
+    position: relative;
+    transform: translateZ(0);
+    transition: box-shadow 600ms var(--ease);
+  }
+  /* Dynamic notch / dynamic island */
+  .phone::before {
+    content: "";
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 86px;
+    height: 26px;
+    background: #000;
+    border-radius: 999px;
+    z-index: 5;
+  }
+  .phone::after {
+    content: "";
+    position: absolute;
+    top: 19px;
+    left: calc(50% + 22px);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #2a2a30, #050505);
+    z-index: 6;
+  }
+
+  /* Subject inside the phone */
+  .screen {
+    position: absolute;
+    inset: 6px;
+    border-radius: 32px;
+    overflow: hidden;
+    background: #0e0e10;
+  }
+
+  .screen-bg {
+    position: absolute;
+    inset: 0;
+    transition: opacity 600ms var(--ease);
+  }
+
+  /* Top toolbar mock */
+  .topbar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 58px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px 0 14px;
+    color: #fff;
+    font-size: 11px;
+    z-index: 4;
+  }
+  .topbar .dot-btn {
+    background: rgba(0,0,0,0.5);
+    padding: 5px 10px;
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+  }
+  .topbar .done {
+    background: #ffd60a;
+    color: #000;
+    font-weight: 600;
+  }
+
+  /* Bottom toolbar */
+  .bottombar {
+    position: absolute;
+    bottom: 12px;
+    left: 0; right: 0;
+    height: 38px;
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    align-items: center;
+    color: rgba(255,255,255,0.85);
+    font-size: 9px;
+    z-index: 4;
+  }
+  .bottombar .tool {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .bottombar .tool .icon {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.18);
+  }
+  .bottombar .tool.is-on .icon { background: #ffd60a; }
+
+  /* Camera control "button" on right edge */
+  .frame-button {
+    position: absolute;
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 2px;
+    transition: all 400ms var(--ease);
+  }
+  .camera-control {
+    right: -10px;
+    top: 28%;
+    width: 4px;
+    height: 38px;
+    border-radius: 1.5px;
+  }
+  .action-button {
+    left: -10px;
+    top: 22%;
+    width: 4px;
+    height: 22px;
+  }
+  .volume-up {
+    left: -10px;
+    top: 31%;
+    width: 4px;
+    height: 30px;
+  }
+  .volume-down {
+    left: -10px;
+    top: 41%;
+    width: 4px;
+    height: 30px;
+  }
+
+  /* Glow ring used for highlighting buttons */
+  .highlight-ring {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 600ms var(--ease);
+    box-shadow:
+      0 0 0 2px rgba(255,122,61,0.6),
+      0 0 20px 6px rgba(255,122,61,0.5);
+    z-index: 8;
+  }
+  .scene[data-id="camera"] .highlight-ring.camera,
+  .scene[data-id="action"] .highlight-ring.action {
+    opacity: 1;
+  }
+
+  /* Image placeholder gradients per feature */
+  .bg-gold {
+    background:
+      radial-gradient(ellipse at 30% 20%, #5a2a0e, transparent 60%),
+      linear-gradient(180deg, #c46a1a 0%, #8a3a0c 60%, #4a1d04 100%);
+  }
+  .bg-aluminum {
+    background:
+      radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.2), transparent 60%),
+      linear-gradient(160deg, #d8d8dc 0%, #98989d 60%, #5e5e63 100%);
+  }
+  .bg-vapor {
+    background:
+      radial-gradient(circle at 50% 60%, #ff5b1f 0%, #b3260c 30%, #1a0805 70%);
+  }
+  .bg-ceramic {
+    background:
+      conic-gradient(from 90deg at 50% 50%, #2a2a30, #0e0e12, #2a2a30, #0e0e12, #2a2a30);
+  }
+  .bg-camera {
+    background:
+      radial-gradient(ellipse at 30% 40%, #c8c8d0 0%, #444 50%, #0a0a0a 100%);
+  }
+  .bg-action {
+    background:
+      radial-gradient(ellipse at 70% 30%, rgba(255,255,255,0.18), transparent 60%),
+      linear-gradient(160deg, #383844 0%, #1a1a22 100%);
+  }
+
+  /* Frame color presets per scene */
+  .scene[data-id="colors"] .hand-phone:nth-child(1) .phone { --frame: #d8612d; --frame-glow: rgba(216, 97, 45, 0.45); }
+  .scene[data-id="colors"] .hand-phone:nth-child(2) .phone { --frame: #2c3046; --frame-glow: rgba(44, 48, 70, 0.5); }
+  .scene[data-id="aluminum"] .phone { --frame: #b8b8be; --frame-glow: rgba(184, 184, 190, 0.4); }
+  .scene[data-id="vapor"] .phone { --frame: #d8612d; --frame-glow: rgba(216, 97, 45, 0.55); }
+  .scene[data-id="ceramic"] .phone { --frame: #2c3046; --frame-glow: rgba(120, 130, 160, 0.35); }
+  .scene[data-id="camera"] .phone { --frame: #d8612d; --frame-glow: rgba(216, 97, 45, 0.55); }
+  .scene[data-id="action"] .phone { --frame: #2c3046; --frame-glow: rgba(44, 48, 70, 0.55); }
+
+  /* Caption shown at bottom of phone */
+  .caption {
+    position: absolute;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    padding: 4px 9px;
+    border-radius: 4px;
+    backdrop-filter: blur(6px);
+    z-index: 4;
+  }
+
+  /* "Hand" — subtle gradient strip at bottom suggesting a hand holding the phone */
+  .hand {
+    position: absolute;
+    left: 50%;
+    bottom: -12%;
+    width: 130%;
+    height: 30%;
+    transform: translateX(-50%);
+    background:
+      radial-gradient(ellipse 50% 100% at 50% 0%, rgba(180, 140, 110, 0.35), transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Single-phone layout for some scenes */
+  .scene.single .hand-phone {
+    width: 320px;
+  }
+
+  /* Initial entry stagger */
+  .feature {
+    opacity: 0;
+    transform: translateX(-12px);
+    animation: pillIn 600ms var(--ease-out) forwards;
+  }
+  .feature:nth-child(1) { animation-delay: 100ms; }
+  .feature:nth-child(2) { animation-delay: 160ms; }
+  .feature:nth-child(3) { animation-delay: 220ms; }
+  .feature:nth-child(4) { animation-delay: 280ms; }
+  .feature:nth-child(5) { animation-delay: 340ms; }
+  .feature:nth-child(6) { animation-delay: 400ms; }
+
+  @keyframes pillIn {
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Responsive */
+  @media (max-width: 880px) {
+    .viewer { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+    .sidebar { padding: 80px 24px 20px 56px; }
+    .stage { padding-bottom: 40px; }
+    .scene .hand-phone { width: 200px; }
+  }
+</style>
+</head>
+<body>
+  <div class="viewer" id="viewer">
+
+    <button class="close-btn" aria-label="Close">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M1 1 L13 13 M13 1 L1 13"/>
+      </svg>
+    </button>
+
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <nav class="nav">
+          <button id="navUp" aria-label="Previous">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 8 L6 4 L10 8"/>
+            </svg>
+          </button>
+          <button id="navDown" aria-label="Next">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 4 L6 8 L10 4"/>
+            </svg>
+          </button>
+        </nav>
+
+        <ul class="features" id="features">
+          <li class="feature active" data-id="colors">
+            <button class="pill"><span class="marker"></span><span>Colors</span></button>
+            <div class="description">
+              <p><strong>A spectrum to choose from.</strong> Cosmic Orange, Deep Blue, and Silver — three finishes, each crafted to catch the light a little differently.<sup>1</sup></p>
+            </div>
+          </li>
+          <li class="feature" data-id="aluminum">
+            <button class="pill"><span class="marker"></span><span>Aluminum unibody</span></button>
+            <div class="description">
+              <p><strong>Forged from a single block.</strong> Aerospace-grade aluminum, machined to a seamless shell that's lighter, stiffer, and disperses heat far better than its predecessor.</p>
+            </div>
+          </li>
+          <li class="feature" data-id="vapor">
+            <button class="pill"><span class="marker"></span><span>Vapor chamber</span></button>
+            <div class="description">
+              <p><strong>Heat, redirected.</strong> A sealed vapor chamber pulls thermal load away from the chip during gaming and pro workflows — sustained performance, even when you push it.</p>
+            </div>
+          </li>
+          <li class="feature" data-id="ceramic">
+            <button class="pill"><span class="marker"></span><span>Ceramic Shield</span></button>
+            <div class="description">
+              <p><strong>Tougher than any phone glass.</strong> Our latest Ceramic Shield front and back delivers 3x better scratch resistance and improved drop performance.<sup>2</sup></p>
+            </div>
+          </li>
+          <li class="feature" data-id="camera">
+            <button class="pill"><span class="marker"></span><span>Camera Control</span></button>
+            <div class="description">
+              <p><strong>A new way to shoot.</strong> A pressure-sensitive control surface for framing, focusing, and capturing — without ever leaving the viewfinder.</p>
+            </div>
+          </li>
+          <li class="feature" data-id="action">
+            <button class="pill"><span class="marker"></span><span>Action button</span></button>
+            <div class="description">
+              <p><strong>Customize the moment.</strong> Map it to silent mode, a shortcut, the camera, the flashlight — whatever matters most in the moment.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="stage" id="stage">
+
+      <!-- Colors -->
+      <div class="scene active" data-id="colors">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-gold"></div>
+              <div class="topbar">
+                <span class="dot-btn">Cancel</span>
+                <span style="opacity:.6; letter-spacing:.18em;">STYLES</span>
+                <span class="dot-btn done">Done</span>
+              </div>
+              <div class="caption">COSMIC ORANGE</div>
+              <div class="bottombar">
+                <div class="tool is-on"><span class="icon"></span><span>Styles</span></div>
+                <div class="tool"><span class="icon"></span><span>Adjust</span></div>
+                <div class="tool"><span class="icon"></span><span>Crop</span></div>
+                <div class="tool"><span class="icon"></span><span>Clean</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg" style="background: linear-gradient(180deg, #4a5066 0%, #2c3046 60%, #14182a 100%);"></div>
+              <div class="topbar">
+                <span class="dot-btn">Cancel</span>
+                <span style="opacity:.6; letter-spacing:.18em;">STYLES</span>
+                <span class="dot-btn done">Done</span>
+              </div>
+              <div class="caption">DEEP BLUE</div>
+              <div class="bottombar">
+                <div class="tool is-on"><span class="icon"></span><span>Styles</span></div>
+                <div class="tool"><span class="icon"></span><span>Adjust</span></div>
+                <div class="tool"><span class="icon"></span><span>Crop</span></div>
+                <div class="tool"><span class="icon"></span><span>Clean</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aluminum unibody -->
+      <div class="scene single" data-id="aluminum">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-aluminum"></div>
+              <div class="caption">UNIBODY ALUMINUM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vapor chamber -->
+      <div class="scene single" data-id="vapor">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-vapor"></div>
+              <div class="caption">SUSTAINED PERFORMANCE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ceramic Shield -->
+      <div class="scene single" data-id="ceramic">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-ceramic"></div>
+              <div class="caption">CERAMIC SHIELD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Camera Control -->
+      <div class="scene single" data-id="camera">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-camera"></div>
+              <div class="caption">CAMERA CONTROL</div>
+            </div>
+            <div class="frame-button camera-control"></div>
+            <div class="highlight-ring camera" style="right: -28px; top: 31%; width: 40px; height: 40px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action button -->
+      <div class="scene single" data-id="action">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-action"></div>
+              <div class="caption">ACTION BUTTON</div>
+            </div>
+            <div class="frame-button action-button"></div>
+            <div class="frame-button volume-up"></div>
+            <div class="frame-button volume-down"></div>
+            <div class="highlight-ring action" style="left: -28px; top: 18%; width: 40px; height: 40px;"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+<script>
+  (function () {
+    const features = Array.from(document.querySelectorAll('#features .feature'));
+    const scenes = Array.from(document.querySelectorAll('.scene'));
+    const navUp = document.getElementById('navUp');
+    const navDown = document.getElementById('navDown');
+    const closeBtn = document.querySelector('.close-btn');
+
+    let activeIndex = features.findIndex(f => f.classList.contains('active'));
+    if (activeIndex < 0) activeIndex = 0;
+
+    const sceneById = id => scenes.find(s => s.dataset.id === id);
+
+    function setActive(index, { scrollIntoView = false } = {}) {
+      index = Math.max(0, Math.min(features.length - 1, index));
+      activeIndex = index;
+
+      features.forEach((f, i) => f.classList.toggle('active', i === index));
+      const id = features[index].dataset.id;
+      scenes.forEach(s => s.classList.toggle('active', s.dataset.id === id));
+
+      navUp.disabled = index === 0;
+      navDown.disabled = index === features.length - 1;
+
+      if (scrollIntoView) {
+        features[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    features.forEach((f, i) => {
+      f.querySelector('.pill').addEventListener('click', () => setActive(i));
+    });
+
+    navUp.addEventListener('click', () => setActive(activeIndex - 1, { scrollIntoView: true }));
+    navDown.addEventListener('click', () => setActive(activeIndex + 1, { scrollIntoView: true }));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp')   { e.preventDefault(); setActive(activeIndex - 1, { scrollIntoView: true }); }
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(activeIndex + 1, { scrollIntoView: true }); }
+      if (e.key === 'Escape')    { closeBtn.click(); }
+    });
+
+    closeBtn.addEventListener('click', () => {
+      const v = document.getElementById('viewer');
+      v.style.transition = 'opacity 350ms ease';
+      v.style.opacity = '0';
+      setTimeout(() => { v.style.opacity = '1'; }, 700);
+    });
+
+    // Init
+    setActive(activeIndex);
+  })();
+</script>
+</body>
+</html>
