@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Product Viewer</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="viewer" id="viewer">
+
+    <button class="close-btn" aria-label="Close">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M1 1 L13 13 M13 1 L1 13"/>
+      </svg>
+    </button>
+
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <nav class="nav">
+          <button id="navUp" aria-label="Previous">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 8 L6 4 L10 8"/>
+            </svg>
+          </button>
+          <button id="navDown" aria-label="Next">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 4 L6 8 L10 4"/>
+            </svg>
+          </button>
+        </nav>
+
+        <ul class="features" id="features">
+          <li class="feature active" data-id="colors">
+            <button class="pill"><span class="marker"></span><span>Colors</span></button>
+            <div class="description">
+              <p><strong>A spectrum to choose from.</strong> Cosmic Orange, Deep Blue, and Silver — three finishes, each crafted to catch the light a little differently.<sup>1</sup></p>
+            </div>
+          </li>
+          <li class="feature" data-id="aluminum">
+            <button class="pill"><span class="marker"></span><span>Aluminum unibody</span></button>
+            <div class="description">
+              <p><strong>Forged from a single block.</strong> Aerospace-grade aluminum, machined to a seamless shell that's lighter, stiffer, and disperses heat far better than its predecessor.</p>
+            </div>
+          </li>
+          <li class="feature" data-id="vapor">
+            <button class="pill"><span class="marker"></span><span>Vapor chamber</span></button>
+            <div class="description">
+              <p><strong>Heat, redirected.</strong> A sealed vapor chamber pulls thermal load away from the chip during gaming and pro workflows — sustained performance, even when you push it.</p>
+            </div>
+          </li>
+          <li class="feature" data-id="ceramic">
+            <button class="pill"><span class="marker"></span><span>Ceramic Shield</span></button>
+            <div class="description">
+              <p><strong>Tougher than any phone glass.</strong> Our latest Ceramic Shield front and back delivers 3x better scratch resistance and improved drop performance.<sup>2</sup></p>
+            </div>
+          </li>
+          <li class="feature" data-id="camera">
+            <button class="pill"><span class="marker"></span><span>Camera Control</span></button>
+            <div class="description">
+              <p><strong>A new way to shoot.</strong> A pressure-sensitive control surface for framing, focusing, and capturing — without ever leaving the viewfinder.</p>
+            </div>
+          </li>
+          <li class="feature" data-id="action">
+            <button class="pill"><span class="marker"></span><span>Action button</span></button>
+            <div class="description">
+              <p><strong>Customize the moment.</strong> Map it to silent mode, a shortcut, the camera, the flashlight — whatever matters most in the moment.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="stage" id="stage">
+
+      <!-- Colors -->
+      <div class="scene active" data-id="colors">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-gold"></div>
+              <div class="topbar">
+                <span class="dot-btn">Cancel</span>
+                <span style="opacity:.6; letter-spacing:.18em;">STYLES</span>
+                <span class="dot-btn done">Done</span>
+              </div>
+              <div class="caption">COSMIC ORANGE</div>
+              <div class="bottombar">
+                <div class="tool is-on"><span class="icon"></span><span>Styles</span></div>
+                <div class="tool"><span class="icon"></span><span>Adjust</span></div>
+                <div class="tool"><span class="icon"></span><span>Crop</span></div>
+                <div class="tool"><span class="icon"></span><span>Clean</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg" style="background: linear-gradient(180deg, #4a5066 0%, #2c3046 60%, #14182a 100%);"></div>
+              <div class="topbar">
+                <span class="dot-btn">Cancel</span>
+                <span style="opacity:.6; letter-spacing:.18em;">STYLES</span>
+                <span class="dot-btn done">Done</span>
+              </div>
+              <div class="caption">DEEP BLUE</div>
+              <div class="bottombar">
+                <div class="tool is-on"><span class="icon"></span><span>Styles</span></div>
+                <div class="tool"><span class="icon"></span><span>Adjust</span></div>
+                <div class="tool"><span class="icon"></span><span>Crop</span></div>
+                <div class="tool"><span class="icon"></span><span>Clean</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aluminum unibody -->
+      <div class="scene single" data-id="aluminum">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-aluminum"></div>
+              <div class="caption">UNIBODY ALUMINUM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vapor chamber -->
+      <div class="scene single" data-id="vapor">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-vapor"></div>
+              <div class="caption">SUSTAINED PERFORMANCE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ceramic Shield -->
+      <div class="scene single" data-id="ceramic">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-ceramic"></div>
+              <div class="caption">CERAMIC SHIELD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Camera Control -->
+      <div class="scene single" data-id="camera">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-camera"></div>
+              <div class="caption">CAMERA CONTROL</div>
+            </div>
+            <div class="frame-button camera-control"></div>
+            <div class="highlight-ring camera" style="right: -28px; top: 31%; width: 40px; height: 40px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action button -->
+      <div class="scene single" data-id="action">
+        <div class="hand-phone">
+          <div class="hand"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="screen-bg bg-action"></div>
+              <div class="caption">ACTION BUTTON</div>
+            </div>
+            <div class="frame-button action-button"></div>
+            <div class="frame-button volume-up"></div>
+            <div class="frame-button volume-down"></div>
+            <div class="highlight-ring action" style="left: -28px; top: 18%; width: 40px; height: 40px;"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
